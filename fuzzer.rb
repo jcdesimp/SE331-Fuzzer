@@ -17,7 +17,7 @@ def main(args)
 
     end
 
-    if args[0] == "test"
+    elsif args[0] == "test"
     	puts "testing"
     end
 
@@ -25,11 +25,10 @@ def main(args)
   end
 end
 
-def discover()
+def discover(url)
+  page = agent.get(url)
 	url_set = Set.new([])
-	page.links.each do |url|
-		url_set.add(url.url)
-	end
+  visited_set = Set.new([url])
 end
 
 def display_help
