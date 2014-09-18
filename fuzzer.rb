@@ -1,8 +1,6 @@
 require "mechanize"
 require 'set'
 
-fuzzy = Mechanize.new
-
 #puts ARGV.to_s
 
 
@@ -10,33 +8,23 @@ fuzzy = Mechanize.new
 # @param args [Array]
 def main(args)
 
+  #mechanize instance to do the fuzzing
+  fuzzy = Mechanize.new
+
   if args.count >= 2
 
     #get the url
     url = args[1]
-    puts url
+    #puts url
 
-    #flag parsing
-    flags = Hash.new(nil)
+    flags = parse_flags(args)
 
-    args.each do
-      # @type arg [String]
-      |arg|
-      if arg.start_with?("--")
-        arg_data = arg.split("=")
-
-        flags[arg_data[0]] = arg_data[1]
-      end
-    end
-    #puts flags
 
     if args[0] == "discover"
-    	puts "discovering"
+    	discover(url, fuzzy)
 
     elsif args[0] == "test"
     	puts "testing"
-    elsif
-      display_help
     else
       puts "Unknown Command!"
       display_help
@@ -46,21 +34,40 @@ def main(args)
     display_help
   end
 
-
-
 end
 
-def discover(url)
-  page = agent.get(url)
+# @param [Array] args
+# @return [Hash]
+def parse_flags(args)
+  #flag parsing
+  flags = Hash.new(nil)
+  args.each do
+    # @type arg [String]
+  |arg|
+    if arg.start_with?("--")
+      arg_data = arg.split("=")
+
+      flags[arg_data[0]] = arg_data[1]
+    end
+  end
+  flags
+end
+
+
+# @param [Mechanize] fuzzer
+# @param [String] url
+def discover(url, fuzzer)
+  page = fuzzer.get(url)
 	url_set = Set.new([])
   visited_set = Set.new([url])
 end
+
 
 def display_help
   print(
       "
 
-fuzz [discover | test] url OPTIONS
+ruby fuzzer.rb [discover | test] url OPTIONS
 
 COMMANDS:
   discover  Output a comprehensive, human-readable list of all discovered inputs to the system. Techniques include both crawling and guessing.
