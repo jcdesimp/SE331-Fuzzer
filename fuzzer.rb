@@ -9,20 +9,45 @@ fuzzy = Mechanize.new
 
 # @param args [Array]
 def main(args)
-  if args.count >= 1
-    url = args[0]
+
+  if args.count >= 2
+
+    #get the url
+    url = args[1]
+    puts url
+
+    #flag parsing
+    flags = Hash.new(nil)
+
+    args.each do
+      # @type arg [String]
+      |arg|
+      if arg.start_with?("--")
+        arg_data = arg.split("=")
+
+        flags[arg_data[0]] = arg_data[1]
+      end
+    end
+    #puts flags
 
     if args[0] == "discover"
     	puts "discovering"
 
-    end
-
-    if args[0] == "test"
+    elsif args[0] == "test"
     	puts "testing"
+    elsif
+      display_help
+    else
+      puts "Unknown Command!"
+      display_help
     end
-
-
+  else
+    puts "Not enough arguments given!"
+    display_help
   end
+
+
+
 end
 
 def discover()
@@ -64,6 +89,7 @@ Examples:
   # Discover and Test DVWA without randomness
   fuzz test http://localhost:8080 --custom-auth=dvwa --common-words=words.txt --vectors=vectors.txt --sensitive=creditcards.txt --random=false\n"
   )
+  exit
 end
 
 #puts ARGV.count
