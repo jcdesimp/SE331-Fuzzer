@@ -9,8 +9,6 @@ fuzzy = Mechanize.new
 
 # @param args [Array]
 def main(args)
-  if args.count >= 1
-    url = args[0]
 
   if args.count >= 2
 
