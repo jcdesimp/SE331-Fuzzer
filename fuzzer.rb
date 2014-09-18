@@ -9,6 +9,8 @@ fuzzy = Mechanize.new
 
 # @param args [Array]
 def main(args)
+  if args.count >= 1
+    url = args[0]
 
   if args.count >= 2
 
@@ -50,11 +52,10 @@ def main(args)
 
 end
 
-def discover()
+def discover(url)
+  page = agent.get(url)
 	url_set = Set.new([])
-	page.links.each do |url|
-		url_set.add(url.url)
-	end
+  visited_set = Set.new([url])
 end
 
 def display_help
