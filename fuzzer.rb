@@ -43,7 +43,7 @@ def main(args)
 
       # If it isnt 'nil' then feed it to authenticate and get the
       # post-authetication url to continue on
-      authenticate(fuzzy, auth_data[0], auth_data[1])
+      fuzzy = authenticate(fuzzy, auth_data[0], auth_data[1])
     end
 
 
@@ -110,6 +110,38 @@ end
 
 # @param [Mechanize] fuzzer
 def discover(fuzzer)
+  page = fuzzer.current_page
+  link_array = []
+
+
+  visited = []
+
+  page.links.each do |link|
+    if link.uri.to_s != "logout.php"
+      link_array.push(link)
+    end
+  end
+
+  while link_array.length() != 0 do
+    to_visit = link_array.pop()
+    puts to_visit.uri
+    if to_visit.uri.to_s != "logout.php"
+      visited.push(to_visit.uri.to_s)
+    end
+    page = to_visit.click
+    
+    puts "-------------------------------"
+    puts page.uri
+    puts "-------------------------------"
+
+    page.links.each do |url|
+      unless visited.include? url.uri
+        link_array.push(url)
+      end
+    end
+    link_array.uniq!
+  end
+  visited.uniq!
 
 end
 
@@ -123,6 +155,7 @@ def authenticate(fuzzer, username, password)
   login_form['username'] = username
   login_form['password'] = password
   page = login_form.click_button
+  return fuzzer
 end
 
 # displays the help information and ends the program
