@@ -23,14 +23,15 @@ def main(args)
     url = args[1]
     #puts url
 
+    fuzzy.get(url)
+
     # get the flag data in a hash
     flags = parse_flags(args)
 
-    # authentucate if auth flag is given
+    # authenticate if auth flag is given
     auth_flag = flags['custom-auth']
     # check if flag exists
     if auth_flag != nil
-
 
       auth_data = AUTHENTICATIONS[auth_flag.to_s.to_sym]
       # check if given auth option is in
@@ -42,7 +43,7 @@ def main(args)
 
       # If it isnt 'nil' then feed it to authenticate and get the
       # post-authetication url to continue on
-      url = authenticate(url,fuzzy,auth_data[0], auth_data[1])
+      authenticate(fuzzy, auth_data[0], auth_data[1])
     end
 
 
@@ -52,7 +53,7 @@ def main(args)
 
     if args[0] == 'discover'
       # discovering
-    	discover(url, fuzzy)
+    	discover(fuzzy)
 
     elsif args[0] == 'test'
       # testing
@@ -108,16 +109,20 @@ end
 
 
 # @param [Mechanize] fuzzer
-# @param [String] url
-def discover(url, fuzzer)
-  page = fuzzer.get(url)
-	url_set = Set.new([])
-  visited_set = Set.new([url])
+def discover(fuzzer)
+
 end
 
+# @param [Mechanize] fuzzer
+# @param [String] username
+# @param [String] password
 # @return [String]
-def authenticate(url, fuzzer, username, password)
-  'http://127.0.0.1'
+def authenticate(fuzzer, username, password)
+  page = fuzzer.current_page
+  login_form = page.forms.first
+  login_form['username'] = username
+  login_form['password'] = password
+  page = login_form.click_button
 end
 
 # displays the help information and ends the program
