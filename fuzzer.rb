@@ -1,53 +1,106 @@
-require "mechanize"
+require 'mechanize'
 require 'set'
 
-#puts ARGV.to_s
 
+ACCEPTABLE_FLAGS = %w(custom-auth common-words)
+AUTHENTICATIONS = {
+    :dvwa => %w(admin password),
 
+    # more authentication can be added
+}
 
 # @param args [Array]
+# Parses arguments and calls the appropriate functions
 def main(args)
 
   #mechanize instance to do the fuzzing
   fuzzy = Mechanize.new
 
+  # Check argument count
   if args.count >= 2
 
     #get the url
     url = args[1]
     #puts url
 
+    # get the flag data in a hash
     flags = parse_flags(args)
 
+    # authentucate if auth flag is given
+    auth_flag = flags['custom-auth']
+    # check if flag exists
+    if auth_flag != nil
 
-    if args[0] == "discover"
+
+      auth_data = AUTHENTICATIONS[auth_flag.to_s.to_sym]
+      # check if given auth option is in
+      # hard coded auth hash
+      if auth_data == nil
+        puts "\nNo authentication data for '#{auth_flag}'"
+        display_help
+      end
+
+      # If it isnt 'nil' then feed it to authenticate and get the
+      # post-authetication url to continue on
+      url = authenticate(url,fuzzy,auth_data[0], auth_data[1])
+    end
+
+
+    # discovering or testing?
+    # otherwise print "Unknown command"
+
+
+    if args[0] == 'discover'
+      # discovering
     	discover(url, fuzzy)
 
-    elsif args[0] == "test"
-    	puts "testing"
+    elsif args[0] == 'test'
+      # testing
+    	puts 'testing'
+    elsif args[0] == 'help'
+      display_help
     else
-      puts "Unknown Command!"
+      # invalid option
+      puts 'Unknown Command!'
       display_help
     end
   else
-    puts "Not enough arguments given!"
+    puts 'Not enough arguments given!'
     display_help
   end
-
 end
 
 # @param [Array] args
 # @return [Hash]
+# Parses the arguments and returns
+# a hash of flags and their asspciated values
 def parse_flags(args)
+
   #flag parsing
   flags = Hash.new(nil)
+
   args.each do
     # @type arg [String]
   |arg|
-    if arg.start_with?("--")
-      arg_data = arg.split("=")
+    # if it starts with '--' then it's a flag
+    if arg.start_with?('--')
 
-      flags[arg_data[0]] = arg_data[1]
+      # @type arg_data [Array]
+      arg_data = arg.split('=')
+
+      # construct the individual flag data
+      flag = arg_data[0].to_s.sub('--','')
+
+      # make sure the flag actually was given a value
+      if arg_data.count != 2
+        puts "\nflag #{flag} not set!"
+        display_help
+      end
+      unless ACCEPTABLE_FLAGS.include? (flag)
+        puts "\nUnknown Flag '#{flag}'"
+        display_help
+      end
+      flags[flag] = arg_data[1]
     end
   end
   flags
@@ -62,7 +115,12 @@ def discover(url, fuzzer)
   visited_set = Set.new([url])
 end
 
+# @return [String]
+def authenticate(url, fuzzer, username, password)
+  'http://127.0.0.1'
+end
 
+# displays the help information and ends the program
 def display_help
   print(
       "
