@@ -1,5 +1,6 @@
 require 'mechanize'
 require 'set'
+require 'uri'
 
 
 ACCEPTABLE_FLAGS = %w(custom-auth common-words)
@@ -108,6 +109,8 @@ def parse_flags(args)
 end
 
 
+
+
 # @param [Mechanize] fuzzer
 def discover(fuzzer)
   page = fuzzer.current_page
@@ -118,15 +121,20 @@ def discover(fuzzer)
   visited = []
 
   page.links.each do |link|
-    if link.uri.to_s != "logout.php"
+    if link.uri.to_s != 'logout.php'
       links_array.push(link)
       links_uri_array.push(link.uri.to_s)
     end
   end
 
-  while links_array.length() != 0
-    to_visit = links_array.pop()
+  while links_array.length != 0
+    to_visit = links_array.pop
+    if fuzzer.visited?(to_visit.uri)
+      puts "    VISITED?? #{to_visit.uri}"
+    end
     unless visited.include? to_visit.uri.to_s
+    #unless fuzzer.visited?(to_visit.uri)
+
       if URI.parse(to_visit.uri.to_s).host == nil
         page = to_visit.click
 
@@ -146,7 +154,40 @@ def discover(fuzzer)
     end
 
   end
-  puts visited
+  #puts visited
+  print_results(fuzzer)
+
+end
+
+# @param fuzzer [Fuzzer]
+def print_results(fuzzer)
+  fuzzer.history.each {
+    # @type p [Page]
+      |p|
+    puts "PAGE: #{p.uri}"
+    p.forms.each {
+      # @type f [Form]
+        |f|
+      puts "  FORM: #{f.name}"
+      puts "  SUBMIT: #{f.submit(f.submits[0]).uri}"
+
+      f.fields.each {
+        # @type fi [Field]
+          |fi|
+        puts "    #{fi.name}"
+      }
+
+    }
+
+  }
+
+  puts "Cookies:"
+  fuzzer.cookies.each {
+    # @type co [HTTP:Cookie]
+      |co|
+    puts "  #{co.to_s}"
+
+  }
 end
 
 # @param [Mechanize] fuzzer
