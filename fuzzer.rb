@@ -111,38 +111,42 @@ end
 # @param [Mechanize] fuzzer
 def discover(fuzzer)
   page = fuzzer.current_page
-  link_array = []
+  host = page.uri.host
 
-
+  links_array = []
+  links_uri_array = []
   visited = []
 
   page.links.each do |link|
     if link.uri.to_s != "logout.php"
-      link_array.push(link)
+      links_array.push(link)
+      links_uri_array.push(link.uri.to_s)
     end
   end
 
-  while link_array.length() != 0 do
-    to_visit = link_array.pop()
-    puts to_visit.uri
-    if to_visit.uri.to_s != "logout.php"
-      visited.push(to_visit.uri.to_s)
-    end
-    page = to_visit.click
-    
-    puts "-------------------------------"
-    puts page.uri
-    puts "-------------------------------"
+  while links_array.length() != 0
+    to_visit = links_array.pop()
+    unless visited.include? to_visit.uri.to_s
+      if URI.parse(to_visit.uri.to_s).host == nil
+        page = to_visit.click
 
-    page.links.each do |url|
-      unless visited.include? url.uri
-        link_array.push(url)
+      end
+      visited.push(to_visit.uri.to_s)
+      #puts to_visit.uri
+      #puts visited.length
+
+    end
+    page.links.each do |link|
+      unless links_uri_array.include? link.uri.to_s
+        unless link.uri.to_s.match(/(.*)logout(.*)/)
+          links_uri_array.push(link.uri.to_s)
+          links_array.push(link)
+        end
       end
     end
-    link_array.uniq!
-  end
-  visited.uniq!
 
+  end
+  puts visited
 end
 
 # @param [Mechanize] fuzzer
