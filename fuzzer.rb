@@ -129,9 +129,6 @@ def discover(fuzzer)
 
   while links_array.length != 0
     to_visit = links_array.pop
-    if fuzzer.visited?(to_visit.uri)
-      puts "    VISITED?? #{to_visit.uri}"
-    end
     unless visited.include? to_visit.uri.to_s
     #unless fuzzer.visited?(to_visit.uri)
 
