@@ -155,6 +155,7 @@ end
 # @param [Mechanize] fuzzer
 def discover(fuzzer)
   page = fuzzer.current_page
+  host = page.uri.host
 
   links_array = []
   links_uri_array = []
@@ -169,11 +170,11 @@ def discover(fuzzer)
 
   while links_array.length() != 0
   	to_visit = links_array.pop()
-  	puts "To visit: "
-  	puts to_visit
-  	puts "Links:"
   	unless visited.include? to_visit.uri.to_s
-  	  page = to_visit.click
+  	  if URI.parse(to_visit.uri.to_s).host == nil
+  	  	page = to_visit.click
+
+  	  end
       visited.push(to_visit.uri.to_s)
       #puts to_visit.uri
       #puts visited.length
@@ -181,18 +182,14 @@ def discover(fuzzer)
   	end
   	page.links.each do |link|
   	  unless links_uri_array.include? link.uri.to_s
-  	  	links_uri_array.push(link.uri.to_s)
-  	  	links_array.push(link)
-  	  	puts "--------"
-  	  	#puts link.uri
-  	  	#puts links_array.length
-  	  	puts "*******"
+  	  	unless link.uri.to_s.match(/(.*)logout(.*)/)
+  	  	  links_uri_array.push(link.uri.to_s)
+  	  	  links_array.push(link)
+  	    end
   	  end
   	end
 
   end
-
-  puts "----"
   puts visited
 end
 
