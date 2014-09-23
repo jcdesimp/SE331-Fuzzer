@@ -167,7 +167,6 @@ end
 def discover(fuzzer, guesses=[])
 
 
-
   page = fuzzer.current_page
   host = page.uri.host
 
@@ -181,7 +180,12 @@ def discover(fuzzer, guesses=[])
     # @type g [Page]
       |g|
     links_uri_array.push(g.uri.to_s)
-    links_array.push(g)
+    g.links.each {
+      # @type l [Link]
+        |l|
+      links_array.push(l)
+    }
+    #links_array.push(g.links)
 
   }
 
@@ -194,11 +198,12 @@ def discover(fuzzer, guesses=[])
 
   while links_array.length != 0
     to_visit = links_array.pop
-    #puts "----------  #{to_visit.uri}"
+    puts "----------  #{to_visit.uri}"
     #unless visited.include? to_visit.uri.to_s
     unless fuzzer.visited?(to_visit.uri)
 
-      if URI.parse(to_visit.uri.to_s).host == nil
+      if URI.parse(to_visit.uri.to_s).host == nil || URI.parse(to_visit.uri.to_s).host == host
+
         page = to_visit.click
 
 
