@@ -15,7 +15,9 @@ AUTHENTICATIONS = {
 def main(args)
 
   #mechanize instance to do the fuzzing
+  # @type fuzzy [Mechanize]
   fuzzy = Mechanize.new
+
 
   # Check argument count
   if args.count >= 2
@@ -44,17 +46,26 @@ def main(args)
 
       # If it isnt 'nil' then feed it to authenticate and get the
       # post-authetication url to continue on
+      # @type fuzzy [Mechanize]
       fuzzy = authenticate(fuzzy, auth_data[0], auth_data[1])
     end
 
 
     # discovering or testing?
     # otherwise print "Unknown command"
-
-
     if args[0] == 'discover'
+
+      #get the guessed results
+      if flags['common-words'] != nil
+        #puts fuzzy.current_page.uri
+        guesses = guess_initialize(fuzzy.current_page, flags['common-words'])
+      else
+        guesses = []
+      end
+
+
       # discovering
-    	discover(fuzzy)
+    	discover(fuzzy, guesses)
 
     elsif args[0] == 'test'
       # testing
@@ -108,17 +119,71 @@ def parse_flags(args)
   flags
 end
 
+# @param filepath [String]
+# @return [Array]
+def guess_initialize(start_page, filepath)
+  guesser = Mechanize.new
 
+  extensions = %w(.php .html .jsp .asp .js .rb .py)
+
+  words = []
+
+  uri_lst = []
+
+  found = []
+
+  f = File.open(filepath , 'r')
+  f.each_line do |line|
+    line.delete!("\n")
+    words.push(line)
+  end
+
+  words.each do |word|
+    uri_lst.push(word)
+    extensions.each do |ext|
+      new_uri = word + ext
+      uri_lst.push(new_uri)
+    end
+  end
+
+    uri_lst.each {
+      # @type g [String]
+        |g|
+      begin
+
+        guesser.get(start_page.uri + '/'+ g)
+        found.push(guesser.current_page)
+      rescue Mechanize::ResponseCodeError, Net::HTTPNotFound
+        next
+      end
+    }
+  found
+
+end
 
 
 # @param [Mechanize] fuzzer
-def discover(fuzzer)
+# @param guesses [Array]
+def discover(fuzzer, guesses=[])
+
+
+
   page = fuzzer.current_page
   host = page.uri.host
 
   links_array = []
   links_uri_array = []
   visited = []
+
+
+  # add guesses
+  guesses.each {
+    # @type g [Page]
+      |g|
+    links_uri_array.push(g.uri.to_s)
+    links_array.push(g)
+
+  }
 
   page.links.each do |link|
     if link.uri.to_s != 'logout.php'
@@ -129,20 +194,25 @@ def discover(fuzzer)
 
   while links_array.length != 0
     to_visit = links_array.pop
-    unless visited.include? to_visit.uri.to_s
-    #unless fuzzer.visited?(to_visit.uri)
+    #puts "----------  #{to_visit.uri}"
+    #unless visited.include? to_visit.uri.to_s
+    unless fuzzer.visited?(to_visit.uri)
 
       if URI.parse(to_visit.uri.to_s).host == nil
         page = to_visit.click
 
+
       end
+
       visited.push(to_visit.uri.to_s)
       #puts to_visit.uri
       #puts visited.length
 
     end
+
     page.links.each do |link|
-      unless links_uri_array.include? link.uri.to_s
+      #unless links_uri_array.include? link.uri.to_s
+      if fuzzer.history.include?(link.uri)
         unless link.uri.to_s.match(/(.*)logout(.*)/)
           links_uri_array.push(link.uri.to_s)
           links_array.push(link)
@@ -158,6 +228,8 @@ end
 
 # @param fuzzer [Fuzzer]
 def print_results(fuzzer)
+  puts 'Pages and Forms'
+  puts '----------------'
   fuzzer.history.each {
     # @type p [Page]
       |p|
@@ -166,19 +238,20 @@ def print_results(fuzzer)
       # @type f [Form]
         |f|
       puts "  FORM: #{f.name}"
-      puts "  SUBMIT: #{f.submit(f.submits[0]).uri}"
-
+      puts "    SUBMIT: #{f.submit(f.submits[0]).uri}"
+      puts '    Fields:'
       f.fields.each {
         # @type fi [Field]
           |fi|
-        puts "    #{fi.name}"
+        puts "       #{fi.name}"
       }
 
     }
 
   }
 
-  puts "Cookies:"
+  puts "\nCookies"
+  puts '--------'
   fuzzer.cookies.each {
     # @type co [HTTP:Cookie]
       |co|
@@ -197,7 +270,7 @@ def authenticate(fuzzer, username, password)
   login_form['username'] = username
   login_form['password'] = password
   page = login_form.click_button
-  return fuzzer
+  fuzzer
 end
 
 # displays the help information and ends the program
