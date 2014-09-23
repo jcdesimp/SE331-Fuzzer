@@ -37,3 +37,7 @@ Examples:
   fuzz test http://localhost:8080 --custom-auth=dvwa --common-words=words.txt --vectors=vectors.txt --sensitive=creditcards.txt --random=false
 ```
 
+### Known Issues
+* If an invalid URL is given then the program outputs errors
+* Inputs are assumed to be well-formed
+
