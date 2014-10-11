@@ -226,7 +226,26 @@ def crawl(page, visited)
   visited
 end
 
+=begin
+  
+fuzzy.read_timeout=4
+rescue Mechanize::Timeout::Error => e
+  puts "There is a delay."
+  new_page = e.force_parse
+end
+  
+=end
 
+=begin
+  
+rescue Mechanize::ResponseCodeError => ex
+  puts "There is a #{ex.class} when opening the page."
+  new_page = ex.force_parse
+end
+  
+end
+  
+=end
 
 
 
