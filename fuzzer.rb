@@ -122,22 +122,28 @@ end
 
 # @param filepath [String]
 # @return [Array]
+def parse_file(filepath)
+  words = []
+  f = File.open(filepath, 'r')
+  f.each_line do |line|
+    line.delete!("\n")
+    words.push(line)
+  end
+  words
+end
+
+# @param filepath [String]
+# @return [Array]
 def guess_initialize(start_page, filepath)
   guesser = Mechanize.new
 
   extensions = %w(.php .html .jsp .asp .js .rb .py)
 
-  words = []
-
   uri_lst = []
 
   found = []
 
-  f = File.open(filepath , 'r')
-  f.each_line do |line|
-    line.delete!("\n")
-    words.push(line)
-  end
+  words = parse_file(filepath)
 
   words.each do |word|
     uri_lst.push(word)
@@ -161,8 +167,6 @@ def guess_initialize(start_page, filepath)
   found
 
 end
-
-
 
 
 # @param fuzzer [Mechanize]
@@ -246,7 +250,6 @@ end
 end
   
 =end
-
 
 
 # @param fuzzer [Mechanize]
