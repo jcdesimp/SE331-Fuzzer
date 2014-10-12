@@ -53,7 +53,7 @@ def main(args)
 
     # discovering or testing?
     # otherwise print "Unknown command"
-    if args[0] == 'discover'
+    if args[0] == 'discover' || args[0] == 'test'
 
       #get the guessed results
       if flags['common-words'] != nil
@@ -66,11 +66,20 @@ def main(args)
 
       # discovering
     	#discover(fuzzy, guesses)
-      discover_rec(fuzzy, guesses)
+      discovered = discover_rec(fuzzy, guesses)
+      if args[0] == 'discover'
+        print_results(fuzzy, discovered)
 
-    elsif args[0] == 'test'
-      # testing
-    	puts 'testing'
+      elsif args[0] == 'test'
+        # testing
+        #puts 'testing'
+        #todo make call to test function
+        # should we just pass the flag array to the function??
+        test_exploits(fuzzy, discovered, nil, nil, nil, 0)
+
+      end
+
+
     elsif args[0] == 'help'
       display_help
     else
@@ -120,6 +129,8 @@ def parse_flags(args)
   flags
 end
 
+
+
 # @param filepath [String]
 # @return [Array]
 def parse_file(filepath)
@@ -131,6 +142,8 @@ def parse_file(filepath)
   end
   words
 end
+
+
 
 # @param filepath [String]
 # @return [Array]
@@ -184,8 +197,8 @@ def discover_rec(fuzzer, guesses=[])
     visited = crawl(p, visited)
   }
 
-
-  print_results(fuzzer, visited)
+  visited
+  #print_results(fuzzer, visited)
 end
 
 # @param visited [Array]
@@ -204,7 +217,7 @@ def crawl(page, visited)
     # @type new_page [Page]
     #puts l.text
 
-    if l.text.include?("Logout") || l == nil
+    if l.text.include?('Logout') || l == nil
       next
     end
     begin
@@ -228,6 +241,37 @@ def crawl(page, visited)
   }
   #puts visited
   visited
+end
+
+
+# @param fuzzer [Mechanize]
+# @param discovered_pages [Array]
+# @param vectors [Array]
+# @param sensitive [Array]
+# @param random [Boolean]
+def test_exploits(fuzzer, discovered_pages, vectors, sensitive, random, time_limit)
+  unless random
+    discovered_pages.each do # @type p [URI]
+      |p|
+      fuzzer.get(p)
+      # @type currpage [Page]
+      currpage = fuzzer.current_page
+      #puts currpage.title
+    puts currpage.uri
+      currpage.forms.each do
+        # @type f [Form]
+        |f|
+        f.fields.each do
+          # @type fi [Field]
+          |fi|
+          fi.value = 'test'
+          puts '    submitted - ' + f.submit.uri.to_s
+
+        end
+      end
+
+    end
+  end
 end
 
 =begin
