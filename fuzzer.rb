@@ -3,7 +3,7 @@ require 'set'
 require 'uri'
 
 
-ACCEPTABLE_FLAGS = %w(custom-auth common-words)
+ACCEPTABLE_FLAGS = %w(custom-auth common-words vectors sensitive random slow)
 AUTHENTICATIONS = {
     :dvwa => %w(admin password),
 
@@ -75,7 +75,8 @@ def main(args)
         #puts 'testing'
         #todo make call to test function
         # should we just pass the flag array to the function??
-        test_exploits(fuzzy, discovered, nil, nil, nil, 0)
+
+        test_exploits(fuzzy, discovered, parse_file(flags['vectors']), nil, nil, 0)
 
       end
 
@@ -264,8 +265,14 @@ def test_exploits(fuzzer, discovered_pages, vectors, sensitive, random, time_lim
         f.fields.each do
           # @type fi [Field]
           |fi|
-          fi.value = 'test'
-          puts '    submitted - ' + f.submit.uri.to_s
+          vectors.each do
+            |v|
+            fi.value = v
+            puts '    submitted - ' + f.submit.uri.to_s
+
+          end
+          #fi.value = 'test'
+          #puts '    submitted - ' + f.submit.uri.to_s
 
         end
       end
