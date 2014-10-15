@@ -97,7 +97,7 @@ end
 # @param [Array] args
 # @return [Hash]
 # Parses the arguments and returns
-# a hash of flags and their asspciated values
+# a hash of flags and their associated values
 def parse_flags(args)
 
   #flag parsing
@@ -268,7 +268,9 @@ def test_exploits(fuzzer, discovered_pages, vectors, sensitive, random, time_lim
           vectors.each do
             |v|
             fi.value = v
-            puts '    submitted - ' + f.submit.uri.to_s
+            submitted_page = f.submit
+            puts '    submitted - ' + submitted_page.uri.to_s
+
 
           end
           #fi.value = 'test'
