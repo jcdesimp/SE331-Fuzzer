@@ -8,7 +8,7 @@ require 'mechanize'
 # @param [String] password
 # @return Page
 def authenticate(url, fuzzer, username, password)
-  page = fuzzer.
+  page = fuzzer.get(url)
   login_form = page.forms.first
   login_form['username'] = username
   login_form['password'] = password
@@ -40,7 +40,18 @@ puts v
 def parse_HTML(post_page, info)
   puts  post_page.body.include?(info)
 end
+# @param [Mechanize] fuzzer
+def insecurity(fuzzer)
+  page = fuzzer.current_page.uri.host
+  security_page = fuzzer.get('security.php')
+  security_page.forms.first.field_with(:name => 'security').options[0].select
+  security_page.forms.first.click_button
+end
 
-shittyFuzzer = Mechanize.new
-page = shittyFuzzer.get('http://store.channelfireball.com/landing')
-parse_HTML(page, 'store')
+fuzzy = Mechanize.new
+url = 'http://127.0.0.1/dvwa/login.php'
+pw = 'password'
+un = 'admin'
+url = authenticate(url, fuzzy, un, pw)
+insecurity(fuzzy)
+puts fuzzy.cookies
