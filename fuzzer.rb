@@ -3,7 +3,7 @@ require 'set'
 require 'uri'
 
 
-ACCEPTABLE_FLAGS = %w(custom-auth common-words vectors sensitive random slow)
+ACCEPTABLE_FLAGS = %w(custom-auth common-words vectors sensitive slow)
 AUTHENTICATIONS = {
     :dvwa => %w(admin password),
 
@@ -56,27 +56,32 @@ def main(args)
     if args[0] == 'discover' || args[0] == 'test'
 
       #get the guessed results
-      if flags['common-words'] != nil
-        #puts fuzzy.current_page.uri
-        guesses = guess_initialize(fuzzy.current_page, flags['common-words'])
-      else
-        guesses = []
-      end
+      (flags['common-words'] != nil) ? guesses = guess_initialize(fuzzy.current_page, flags['common-words']) : guesses = []
 
 
       # discovering
     	#discover(fuzzy, guesses)
-      discovered = discover_rec(fuzzy, guesses)
+
       if args[0] == 'discover'
+        discovered = discover_rec(fuzzy, guesses)
         print_results(fuzzy, discovered)
 
       elsif args[0] == 'test'
         # testing
         #puts 'testing'
         #todo make call to test function
-        # should we just pass the flag array to the function??
 
-        test_exploits(fuzzy, discovered, parse_file(flags['vectors']), nil, nil, 0)
+
+        if flags.has_key?('vectors') and flags.has_key?('sensitive')
+          if flags.has_key?('custom-auth') and flags['custom-auth'] == 'dvwa'
+            insecurity(fuzzy)
+          end
+          discovered = discover_rec(fuzzy, guesses)
+          test_exploits(fuzzy, discovered, parse_file(flags['vectors']), parse_file(flags['sensitive']), flags['slow'].to_f)
+        else
+          display_help
+        end
+
 
       end
 
@@ -94,6 +99,13 @@ def main(args)
   end
 end
 
+  def insecurity(fuzzer)
+    page = fuzzer.current_page.uri.host
+    security_page = fuzzer.get('security.php')
+    security_page.forms.first.field_with(:name => 'security').options[0].select
+    security_page.forms.first.click_button
+  end
+
 # @param [Array] args
 # @return [Hash]
 # Parses the arguments and returns
@@ -102,6 +114,9 @@ def parse_flags(args)
 
   #flag parsing
   flags = Hash.new(nil)
+
+  #set defaults
+  flags['slow'] = '5'
 
   args.each do
     # @type arg [String]
@@ -216,9 +231,10 @@ def crawl(page, visited)
       |l|
     #puts l
     # @type new_page [Page]
-    #puts l.text
 
-    if l.text.include?('Logout') || l == nil
+
+    if l.text.include?('Logout') || l == nil || l.text.include?('enable PHPIDS')
+      #puts l.text
       next
     end
     begin
@@ -249,16 +265,28 @@ end
 # @param discovered_pages [Array]
 # @param vectors [Array]
 # @param sensitive [Array]
-# @param random [Boolean]
-def test_exploits(fuzzer, discovered_pages, vectors, sensitive, random, time_limit)
-  unless random
+def test_exploits(fuzzer, discovered_pages, vectors, sensitive, time_limit)
+  #puts fuzzer.cookies
+
     discovered_pages.each do # @type p [URI]
       |p|
+      #puts "#{fuzzer.cookies} on #{p}"
+
+      # HARDCODED to avoid setting security back on high
+      if p.to_s.include?('dvwa/security.php')
+        next
+      end
+      fuzzer.read_timeout=4
+      puts p
       fuzzer.get(p)
       # @type currpage [Page]
       currpage = fuzzer.current_page
       #puts currpage.title
-    puts currpage.uri
+
+      # Array of explots for page
+      found_exploits = []
+      puts 'Testing ' + currpage.uri.to_s
+
       currpage.forms.each do
         # @type f [Form]
         |f|
@@ -267,20 +295,52 @@ def test_exploits(fuzzer, discovered_pages, vectors, sensitive, random, time_lim
           |fi|
           vectors.each do
             |v|
-            fi.value = v
-            submitted_page = f.submit
-            puts '    submitted - ' + submitted_page.uri.to_s
+            f[fi.name] = v
+            #fi.value = v
+            #puts fi.value
 
 
-          end
+            begin
+              fuzzer.read_timeout=time_limit
+
+              submitted_page = f.click_button
+
+              #puts submitted_page.uri
+
+              #puts submitted_page.body
+              sensitive.each do
+                # @type sen [String]
+                |sen|
+
+                if page_contains(submitted_page, sen)
+                  found_exploits.push("Sensitive Data - '#{sen}' when submitting '#{v}' in field '#{fi.name}' on page #{currpage.uri.to_s}")
+                end
+              end
+              #puts '    submitted - ' + submitted_page.uri.to_s
+            rescue Timeout::Error, Net::ReadTimeout, Net::HTTP::Persistent::Error => e
+              #When a timeout happens
+              found_exploits.push("Timeout - submitting '#{v}' in field '#{fi.name}' on page #{currpage.uri.to_s}")
+            end
           #fi.value = 'test'
           #puts '    submitted - ' + f.submit.uri.to_s
 
+          end
+        end
+
+      end
+      #print the explots that were found on that page
+      if found_exploits.count == 0
+        puts '     -- No exploits found'
+      else
+        found_exploits.each do |e|
+          puts '     -!- ' + e
         end
       end
-
-    end
   end
+end
+
+def page_contains(post_page, info)
+  post_page.body.include?(info)
 end
 
 =begin
@@ -379,8 +439,7 @@ OPTIONS:
   Test options:
     --vectors=file         Newline-delimited file of common exploits to vulnerabilities. Required.
     --sensitive=file       Newline-delimited file data that should never be leaked. It's assumed that this data is in the application's database (e.g. test data), but is not reported in any response. Required.
-    --random=[true|false]  When off, try each input to each page systematically.  When on, choose a random page, then a random input field and test all vectors. Default: false.
-    --slow=500             Number of milliseconds considered when a response is considered \"slow\". Default is 500 milliseconds
+    --slow=1             Number of seconds considered when a response is considered \"slow\". Default is 1 second
 
 Examples:
   # Discover inputs
@@ -389,9 +448,7 @@ Examples:
   # Discover inputs to DVWA using our hard-coded authentication
   fuzz discover http://localhost:8080 --common-words=mywords.txt
 
-  # Discover and Test DVWA without randomness
-  fuzz test http://localhost:8080 --custom-auth=dvwa --common-words=words.txt --vectors=vectors.txt --sensitive=creditcards.txt --random=false\n"
-  )
+  ")
   exit
 end
 

@@ -23,7 +23,6 @@ OPTIONS:
   Test options:
     --vectors=file         Newline-delimited file of common exploits to vulnerabilities. Required.
     --sensitive=file       Newline-delimited file data that should never be leaked. It's assumed that this data is in the application's database (e.g. test data), but is not reported in any response. Required.
-    --random=[true|false]  When off, try each input to each page systematically.  When on, choose a random page, then a random input field and test all vectors. Default: false.
     --slow=500             Number of milliseconds considered when a response is considered "slow". Default is 500 milliseconds
 
 Examples:
@@ -32,9 +31,6 @@ Examples:
 
   # Discover inputs to DVWA using our hard-coded authentication
   fuzz discover http://localhost:8080 --common-words=mywords.txt
-
-  # Discover and Test DVWA without randomness
-  fuzz test http://localhost:8080 --custom-auth=dvwa --common-words=words.txt --vectors=vectors.txt --sensitive=creditcards.txt --random=false
 ```
 
 ### Known Issues
